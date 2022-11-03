@@ -1,0 +1,57 @@
+FROM python:3.10-bullseye
+
+WORKDIR /home/app
+
+RUN apt-get update && apt-get install -y zsh git vim tmux openssh-server
+
+COPY requirements.txt ./
+
+RUN pip install --no-cache-dir -r requirements.txt
+
+# install oh-my-zsh
+RUN wget https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh
+RUN sh install.sh
+RUN rm install.sh
+RUN git config --global oh-my-zsh.hide-info 1
+
+# install zsh-autosuggestions
+RUN git clone https://github.com/zsh-users/zsh-autosuggestions ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-autosuggestions
+
+# install zsh-autocomplete
+RUN git clone --depth 1 -- https://github.com/marlonrichert/zsh-autocomplete.git ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-autocomplete
+
+# install zoxide
+RUN apt-get install zoxide
+RUN echo eval "$(zoxide init zsh)" >> ~/.zshrc
+
+# install fzf
+RUN git clone --depth 1 https://github.com/junegunn/fzf.git ~/.fzf
+RUN ~/.fzf/install
+
+# install fd
+RUN apt-get install fd-find
+RUN mkdir -p ~/.local/bin
+RUN ln -s $(which fdfind) ~/.local/bin/fd
+ENV PATH="${PATH}:/root/.local/bin"
+
+# install Ag
+RUN apt-get install silversearcher-ag
+
+# install Rg
+RUN apt-get install ripgrep
+
+# install bat
+RUN apt-get install -y bat
+RUN ln -s /usr/bin/batcat ~/.local/bin/bat
+
+# configure zsh, vim, tmux according to custom dotfiles
+RUN git clone https://github.com/bolianchen/dotfiles.git ~/.dotfiles
+RUN bash ~/.dotfiles/setup_a_new_machine.sh
+
+EXPOSE 8000
+
+COPY . .
+
+CMD ["zsh"]
+
+
